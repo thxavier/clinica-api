@@ -1,0 +1,38 @@
+name: CD - Deploy Contínuo no EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy na instância EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do código
+        uses: actions/checkout@v4
+
+      - name: 🚀 Deploy via SSH no EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            echo "📂 Acessando diretório da aplicação..."
+            cd /home/${{ secrets.EC2_USER }}/clinica-api
+
+            echo "⬇️ Atualizando código do repositório..."
+            git pull origin main
+
+            echo "📦 Instalando dependências de produção..."
+            npm ci --omit=dev
+
+            echo "🔄 Reiniciando aplicação com PM2..."
+            pm2 restart clinica-api || pm2 start server.js --name clinica-api
+
+            echo "✅ Deploy concluído com sucesso!"
+            pm2 status

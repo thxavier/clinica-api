@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Clínica API</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #F0F4F8;
+      --surface:  #FFFFFF;
+      --border:   #DDE3EA;
+      --primary:  #1A6B5A;
+      --primary-light: #E8F5F1;
+      --danger:   #C0392B;
+      --danger-light: #FDECEA;
+      --warning:  #B7770D;
+      --warning-light: #FEF9EC;
+      --text:     #1A1F2E;
+      --muted:    #6B7280;
+      --radius:   10px;
+      --shadow:   0 1px 4px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.05);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    }
+    header .logo { font-size: 28px; }
+    header h1 { font-family: 'DM Serif Display', serif; font-size: 22px; font-weight: 400; }
+    header span { font-size: 13px; opacity: .75; margin-left: auto; background: rgba(255,255,255,.15); padding: 4px 12px; border-radius: 20px; }
+
+    /* ── Layout ── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 32px 20px; }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+    .tab-btn {
+      padding: 10px 22px; border-radius: 8px; border: 1.5px solid var(--border);
+      background: var(--surface); font-size: 14px; font-weight: 500; cursor: pointer;
+      color: var(--muted); transition: all .18s;
+    }
+    .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* ── Cards ── */
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media(max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--surface); border-radius: var(--radius);
+      box-shadow: var(--shadow); border: 1px solid var(--border); overflow: hidden;
+    }
+    .card-header {
+      padding: 14px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .card-header .icon { font-size: 18px; }
+    .card-header h3 { font-size: 15px; font-weight: 600; }
+    .card-header .badge {
+      margin-left: auto; font-size: 11px; padding: 2px 10px;
+      border-radius: 20px; font-weight: 600;
+    }
+    .badge-get    { background: var(--primary-light); color: var(--primary); }
+    .badge-post   { background: #EEF2FF; color: #4338CA; }
+    .badge-put    { background: var(--warning-light); color: var(--warning); }
+    .badge-delete { background: var(--danger-light); color: var(--danger); }
+
+    .card-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+
+    label { font-size: 13px; font-weight: 500; color: var(--muted); display: block; margin-bottom: 4px; }
+
+    input, select, textarea {
+      width: 100%; padding: 9px 12px; border: 1.5px solid var(--border);
+      border-radius: 7px; font-size: 14px; font-family: inherit;
+      background: var(--bg); color: var(--text); transition: border .15s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none; border-color: var(--primary);
+      background: #fff;
+    }
+    textarea { resize: vertical; min-height: 70px; }
+
+    /* ── Buttons ── */
+    .btn {
+      width: 100%; padding: 11px; border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 600; cursor: pointer; display: flex;
+      align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s;
+    }
+    .btn:hover { opacity: .88; }
+    .btn:active { transform: scale(.98); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-danger  { background: var(--danger); color: #fff; }
+    .btn-warning { background: #E67E22; color: #fff; }
+    .btn-info    { background: #2980B9; color: #fff; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Response ── */
+    .response-box {
+      margin-top: 10px; padding: 12px; border-radius: 8px;
+      background: #0F1923; color: #A8FFD8; font-size: 12px;
+      font-family: 'Courier New', monospace; max-height: 220px;
+      overflow-y: auto; white-space: pre-wrap; display: none; border: 1px solid #1E3040;
+    }
+    .response-box.error { color: #FF8A80; }
+    .response-box.show { display: block; }
+
+    /* ── Section header ── */
+    .section-title {
+      font-family: 'DM Serif Display', serif; font-size: 20px;
+      margin-bottom: 18px; color: var(--primary);
+      border-bottom: 2px solid var(--primary-light); padding-bottom: 8px;
+    }
+
+    /* ── Status dot ── */
+    .status-bar {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: var(--muted); margin-bottom: 20px;
+    }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: #ccc; }
+    .dot.online { background: #27AE60; box-shadow: 0 0 0 3px rgba(39,174,96,.2); }
+    .dot.offline { background: var(--danger); }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">🏥</span>
+  <h1>Clínica — Painel da API</h1>
+  <span id="api-url">localhost:3000</span>
+</header>
+
+<div class="container">
+
+  <div class="status-bar">
+    <div class="dot" id="status-dot"></div>
+    <span id="status-text">Verificando conexão...</span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('pacientes')">👤 Pacientes</button>
+    <button class="tab-btn" onclick="switchTab('consultas')">📋 Consultas</button>
+  </div>
+
+  <!-- ═══════════════ PACIENTES ═══════════════ -->
+  <div class="tab-pane active" id="tab-pacientes">
+    <p class="section-title">Gerenciar Pacientes</p>
+    <div class="grid">
+
+      <!-- Listar todos -->
+      <div class="card">
+        <div class="card-header">
+          <span class="icon">📋</span>
+          <h3>Listar todos os pacientes</h3>
+          <span class="badge badge-get">GET</span>
+        </div>
+        <div class="card-body">
+          <button class="btn btn-primary" onclick="req('GET','/pacientes',null,'r-p-list')">Buscar pacientes</button>
+          <div class="response-box" id="r-p-list"></div>
+        </div>
+      </div>
+
+      <!-- Buscar por ID -->
+      <div class="card">
+        <div class="card-header">
+          <span class="icon">🔍</span>
+          <h3>Buscar paciente por ID</h3>
+          <span class="badge badge-get">GET</span>
+        </div>
+        <div class="card-body">
+          <label>ID do Paciente</label>
+          <input type="number" id="p-get-id" placeholder="Ex: 1" min="1"/>
+          <button class="btn btn-info" onclick="req('GET',`/pacientes/${v('p-get-id')}`,null,'r-p-get')">Buscar</button>
+          <div class="response-box" id="r-p-get"></div>
+        </div>
+      </div>
+
+      <!-- Criar paciente -->
+      <div class="card">
+        <div class="card-header">
+          <span class="icon">➕</span>
+          <h3>Criar paciente</h3>
+          <span class="badge badge-post">POST</span>
+        </div>
+        <div class="card-body">
+          <label>Nome completo</label>
+          <input id="p-nome" placeholder="Maria Silva"/>
+          <label>CPF</label>
+          <input id="p-cpf" placeholder="123.456.789-00"/>
+          <label>E-mail</label>
+          <input id="p-email" type="email" placeholder="maria@email.com"/>
+          <label>Telefone</label>
+          <input id="p-tel" placeholder="(48) 99999-0000"/>
+          <label>Data de Nascimento</label>
+          <input id="p-nasc" type="date"/>
+          <button class="btn btn-primary" onclick="criarPaciente()">Criar paciente</button>
+          <div class="response-box" id="r-p-post"></div>
+        </div>
+      </div>
+
+      <!-- Atualizar paciente -->
+      <div class="card">
+        <div class="card-header">
+          <span class="icon">✏️</span>
+          <h3>Atualizar paciente</h3>
+          <span class="badge badge-put">PUT</span>
+        </div>
+        <div class="card-body">
+          <label>ID do Paciente</label>
+          <input type="number" id="p-put-id" placeholder="Ex: 1" min="1"/>
+          <label>Nome completo</label>
+          <input id="p-put-nome" placeholder="Maria Silva Souza"/>
+          <label>CPF</label>
+          <input id="p-put-cpf" placeholder="123.456.789-00"/>
+          <label>E-mail</label>
+          <input id="p-put-email" type="email" placeholder="novo@email.com"/>
+          <label>Telefone</label>
+          <input id="p-put-tel" placeholder="(48) 98888-1111"/>
+          <label>Data de Nascimento</label>
+          <input id="p-put-nasc" type="date"/>
+          <button class="btn btn-warning" onclick="atualizarPaciente()">Atualizar</button>
+          <div class="response-box" id="r-p-put"></div>
+        </div>
+      </div>
+
+      <!-- Deletar paciente -->
+      <div class="card">
+        <div class="card-header">
+          <span class="icon">🗑️</span>
+          <h3>Remover paciente</h3>
+          <span class="badge badge-delete">DELETE</span>
+        </div>
+        <div class="card-body">
+          <label>ID do Paciente</label>
+          <input type="number" id="p-del-id" placeholder="Ex: 1" min="1"/>
+          <button class="btn btn-danger" onclick="req('DELETE',`/pacientes/${v('p-del-id')}`,null,'r-p-del')">Remover</button>
+          <div class="response-box" id="r-p-del"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════ CONSULTAS ═══════════════ -->
+  <div class="tab-pane" id="tab-consultas">
+    <p class="section-title">Gerenciar Consultas</p>
+    <div class="grid">
+
+      <!-- Listar todas -->
+      <div class="card">
+        <div class="card-header">
+          <span class="icon">📋</span>
+          <h3>Listar todas as consultas</h3>
+          <span class="badge badge-get">GET</span>
+        </div>
+        <div class="card-body">
+          <button class="btn btn-primary" onclick="req('GET','/consultas',null,'r-c-list')">Buscar consultas</button>
+          <div class="response-box" id="r-c-list"></div>
+        </div>
+      </div>
+
+      <!-- Buscar por ID -->
+      <div class="card">
+        <div class="card-header">
+          <span class="icon">🔍</span>
+          <h3>Buscar consulta por ID</h3>
+          <span class="badge badge-get">GET</span>
+        </div>
+        <div class="card-body">
+          <label>ID da Consulta</label>
+          <input type="number" id="c-get-id" placeholder="Ex: 1" min="1"/>
+          <button class="btn btn-info" onclick="req('GET',`/consultas/${v('c-get-id')}`,null,'r-c-get')">Buscar</button>
+          <div class="response-box" id="r-c-get"></div>
+        </div>
+      </div>
+
+      <!-- Consultas por paciente -->
+      <div class="card">
+        <div class="card-header">
+          <span class="icon">👤</span>
+          <h3>Consultas por paciente</h3>
+          <span class="badge badge-get">GET</span>
+        </div>
+        <div class="card-body">
+          <label>ID do Paciente</label>
+          <input type="number" id="c-pac-id" placeholder="Ex: 1" min="1"/>
+          <button class="btn btn-info" onclick="req('GET',`/consultas/paciente/${v('c-pac-id')}`,null,'r-c-pac')">Buscar consultas</button>
+          <div class="response-box" id="r-c-pac"></div>
+        </div>
+      </div>
+
+      <!-- Criar consulta -->
+      <div class="card">
+        <div class="card-header">
+          <span class="icon">➕</span>
+          <h3>Criar consulta</h3>
+          <span class="badge badge-post">POST</span>
+        </div>
+        <div class="card-body">
+          <label>ID do Paciente</label>
+          <input type="number" id="c-pac" placeholder="Ex: 1" min="1"/>
+          <label>Médico</label>
+          <input id="c-med" placeholder="Dr. João Santos"/>
+          <label>Especialidade</label>
+          <input id="c-esp" placeholder="Clínica Geral"/>
+          <label>Data e Hora</label>
+          <input id="c-data" type="datetime-local"/>
+          <label>Status</label>
+          <select id="c-status">
+            <option value="agendada">Agendada</option>
+            <option value="realizada">Realizada</option>
+            <option value="cancelada">Cancelada</option>
+          </select>
+          <label>Observações (opcional)</label>
+          <textarea id="c-obs" placeholder="Consulta de rotina..."></textarea>
+          <button class="btn btn-primary" onclick="criarConsulta()">Criar consulta</button>
+          <div class="response-box" id="r-c-post"></div>
+        </div>
+      </div>
+
+      <!-- Atualizar consulta -->
+      <div class="card">
+        <div class="card-header">
+          <span class="icon">✏️</span>
+          <h3>Atualizar consulta</h3>
+          <span class="badge badge-put">PUT</span>
+        </div>
+        <div class="card-body">
+          <label>ID da Consulta</label>
+          <input type="number" id="c-put-id" placeholder="Ex: 1" min="1"/>
+          <label>ID do Paciente</label>
+          <input type="number" id="c-put-pac" placeholder="Ex: 1" min="1"/>
+          <label>Médico</label>
+          <input id="c-put-med" placeholder="Dr. João Santos"/>
+          <label>Especialidade</label>
+          <input id="c-put-esp" placeholder="Cardiologia"/>
+          <label>Data e Hora</label>
+          <input id="c-put-data" type="datetime-local"/>
+          <label>Status</label>
+          <select id="c-put-status">
+            <option value="agendada">Agendada</option>
+            <option value="realizada">Realizada</option>
+            <option value="cancelada">Cancelada</option>
+          </select>
+          <label>Observações (opcional)</label>
+          <textarea id="c-put-obs" placeholder="..."></textarea>
+          <button class="btn btn-warning" onclick="atualizarConsulta()">Atualizar</button>
+          <div class="response-box" id="r-c-put"></div>
+        </div>
+      </div>
+
+      <!-- Deletar consulta -->
+      <div class="card">
+        <div class="card-header">
+          <span class="icon">🗑️</span>
+          <h3>Remover consulta</h3>
+          <span class="badge badge-delete">DELETE</span>
+        </div>
+        <div class="card-body">
+          <label>ID da Consulta</label>
+          <input type="number" id="c-del-id" placeholder="Ex: 1" min="1"/>
+          <button class="btn btn-danger" onclick="req('DELETE',`/consultas/${v('c-del-id')}`,null,'r-c-del')">Remover</button>
+          <div class="response-box" id="r-c-del"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const BASE = 'http://localhost:3000';
+
+  // Atalho: pega valor de um input pelo id
+  const v = id => document.getElementById(id).value.trim();
+
+  // Troca de aba
+  function switchTab(name) {
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  // Exibe resposta no box
+  function showResponse(id, data, ok) {
+    const el = document.getElementById(id);
+    el.textContent = JSON.stringify(data, null, 2);
+    el.className = 'response-box show' + (ok ? '' : ' error');
+  }
+
+  // Requisição genérica
+  async function req(method, path, body, responseId) {
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = JSON.stringify(body);
+    try {
+      const res = await fetch(BASE + path, opts);
+      const data = await res.json();
+      showResponse(responseId, data, res.ok);
+    } catch (e) {
+      showResponse(responseId, { erro: 'Não foi possível conectar à API. O servidor está rodando?' }, false);
+    }
+  }
+
+  // Criar paciente
+  function criarPaciente() {
+    req('POST', '/pacientes', {
+      nome: v('p-nome'), cpf: v('p-cpf'), email: v('p-email'),
+      telefone: v('p-tel'), data_nasc: v('p-nasc')
+    }, 'r-p-post');
+  }
+
+  // Atualizar paciente
+  function atualizarPaciente() {
+    req('PUT', `/pacientes/${v('p-put-id')}`, {
+      nome: v('p-put-nome'), cpf: v('p-put-cpf'), email: v('p-put-email'),
+      telefone: v('p-put-tel'), data_nasc: v('p-put-nasc')
+    }, 'r-p-put');
+  }
+
+  // Criar consulta
+  function criarConsulta() {
+    req('POST', '/consultas', {
+      paciente_id: Number(v('c-pac')), medico: v('c-med'),
+      especialidade: v('c-esp'), data_consulta: v('c-data'),
+      status: v('c-status'), observacoes: v('c-obs')
+    }, 'r-c-post');
+  }
+
+  // Atualizar consulta
+  function atualizarConsulta() {
+    req('PUT', `/consultas/${v('c-put-id')}`, {
+      paciente_id: Number(v('c-put-pac')), medico: v('c-put-med'),
+      especialidade: v('c-put-esp'), data_consulta: v('c-put-data'),
+      status: v('c-put-status'), observacoes: v('c-put-obs')
+    }, 'r-c-put');
+  }
+
+  // Verifica se a API está online
+  async function checkStatus() {
+    const dot = document.getElementById('status-dot');
+    const txt = document.getElementById('status-text');
+    try {
+      const res = await fetch(BASE + '/');
+      if (res.ok) {
+        dot.className = 'dot online';
+        txt.textContent = 'API conectada em ' + BASE;
+      } else { throw new Error(); }
+    } catch {
+      dot.className = 'dot offline';
+      txt.textContent = 'API offline — execute "npm start" no terminal';
+    }
+  }
+
+  checkStatus();
+  setInterval(checkStatus, 5000);
+</script>
+</body>
+</html>
