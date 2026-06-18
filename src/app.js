@@ -9,7 +9,7 @@ const app = express();
 // Middlewares
 app.use(cors());                          // Permite requisições de qualquer origem
 app.use(express.json());                  // Faz o Express entender JSON no corpo da requisição
-
+app.use('/frontend', require('express').static('frontend'));
 // Rota inicial para testar se a API está rodando
 app.get('/', (req, res) => {
   res.json({
