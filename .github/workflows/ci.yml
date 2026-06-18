@@ -31,8 +31,14 @@ jobs:
       - name: 🔍 Análise de código estático (ESLint)
         run: npm run lint
 
+      - name: 🌐 Instalar Google Chrome
+        uses: browser-actions/setup-chrome@v1
+
       - name: 🧪 Rodar testes de unidade com cobertura
         run: npm run test:coverage
+
+      - name: 🖥️ Rodar testes Selenium
+        run: npm run test:selenium
 
       - name: 📊 Publicar relatório de cobertura
         uses: actions/upload-artifact@v4
